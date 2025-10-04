@@ -46,7 +46,7 @@ func checkForUpdateNotification() {
 	if releases.IsNewerVersion(releases.Version, latest) {
 		fmt.Printf("> Newer version available: %s -> %s\n", releases.Version, latest)
 		if isHomebrewInstall() {
-			fmt.Println("> $ brew upgrade quic")
+			fmt.Println("> $ brew update && brew upgrade quic")
 		} else {
 			fmt.Println("> $ quic update")
 		}
