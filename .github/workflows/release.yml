@@ -25,7 +25,7 @@ jobs:
       - name: Build releases
         run: |
           # Build quic with production configuration
-          LDFLAGS="-X 'github.com/quicdb/quic-cli/internal/version.Version=${{ steps.version.outputs.version }}' \
+          LDFLAGS="-X 'github.com/quicdb/quic-cli/releases.Version=${{ steps.version.outputs.version }}' \
                    -X 'github.com/quicdb/quic-cli/internal/config.ClientID=${{ secrets.STYTCH_CLIENT_ID }}' \
                    -X 'github.com/quicdb/quic-cli/internal/config.ProjectID=${{ secrets.STYTCH_PROJECT_ID }}' \
                    -X 'github.com/quicdb/quic-cli/internal/config.APIURL=https://api.quicdb.com/api/cli' \
