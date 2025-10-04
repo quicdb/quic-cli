@@ -7,7 +7,7 @@ Official CLI for [QuicDB](https://quicdb.com) to manage your database branches.
 ### macOS and Linux (Homebrew)
 
 ```bash
-brew tap quicdb/quic-cli-homebrew-tap
+brew tap quicdb/tap
 brew install quic
 ```
 
