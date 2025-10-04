@@ -1,0 +1,28 @@
+# Binaries
+quic
+quic-cli
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+*.out
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Environment files containing secrets
+.env
+.claude
