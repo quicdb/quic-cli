@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build releases
+        run: |
+          # Build quic with production configuration
+          LDFLAGS="-X 'github.com/quicdb/quic-cli/internal/version.Version=${{ steps.version.outputs.version }}' \
+                   -X 'github.com/quicdb/quic-cli/internal/config.ClientID=${{ secrets.STYTCH_CLIENT_ID }}' \
+                   -X 'github.com/quicdb/quic-cli/internal/config.ProjectID=${{ secrets.STYTCH_PROJECT_ID }}' \
+                   -X 'github.com/quicdb/quic-cli/internal/config.APIURL=https://api.quicdb.com/api/cli' \
+                   -X 'github.com/quicdb/quic-cli/internal/config.AuthorizeURL=https://dash.quicdb.com/oauth/authorize' \
+                   -X 'github.com/quicdb/quic-cli/internal/config.StytchURL=https://api.stytch.com'"
+
+          GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o quic-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o quic-darwin-arm64
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o quic-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o quic-linux-arm64
+
+      - name: Generate checksums
+        run: |
+          shasum -a 256 quic* > checksums.txt
+          cat checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            quic-darwin-amd64
+            quic-darwin-arm64
+            quic-linux-amd64
+            quic-linux-arm64
+            checksums.txt
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew Formula
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+        run: |
+          # Extract checksums
+          SHA_DARWIN_AMD64=$(grep "quic-darwin-amd64" checksums.txt | awk '{print $1}')
+          SHA_DARWIN_ARM64=$(grep "quic-darwin-arm64" checksums.txt | awk '{print $1}')
+          SHA_LINUX_AMD64=$(grep "quic-linux-amd64" checksums.txt | awk '{print $1}')
+          SHA_LINUX_ARM64=$(grep "quic-linux-arm64" checksums.txt | awk '{print $1}')
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Clone homebrew tap
+          git clone https://x-access-token:${TAP_TOKEN}@github.com/quicdb/quic-cli-homebrew-tap.git tap
+          cd tap
+
+          # Update formula
+          cat > Formula/quic.rb <<EOF
+          class Quic < Formula
+            desc "QuicDB CLI for managing database branches"
+            homepage "https://quicdb.com"
+            version "${VERSION#v}"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/quicdb/quic-cli/releases/download/${VERSION}/quic-darwin-arm64"
+                sha256 "${SHA_DARWIN_ARM64}"
+              else
+                url "https://github.com/quicdb/quic-cli/releases/download/${VERSION}/quic-darwin-amd64"
+                sha256 "${SHA_DARWIN_AMD64}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/quicdb/quic-cli/releases/download/${VERSION}/quic-linux-arm64"
+                sha256 "${SHA_LINUX_ARM64}"
+              else
+                url "https://github.com/quicdb/quic-cli/releases/download/${VERSION}/quic-linux-amd64"
+                sha256 "${SHA_LINUX_AMD64}"
+              end
+            end
+
+            def install
+              bin.install Dir["quic-*"].first => "quic"
+            end
+
+            test do
+              system "#{bin}/quic", "version"
+            end
+          end
+          EOF
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/quic.rb
+          git commit -m "Update quic to ${VERSION}"
+          git push
