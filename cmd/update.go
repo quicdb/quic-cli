@@ -16,6 +16,11 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update to the latest version",
 	Run: func(cmd *cobra.Command, args []string) {
+		if isHomebrewInstall() {
+			fmt.Println("Detected Homebrew installation.")
+			fmt.Println("Please use: brew upgrade quic")
+			os.Exit(1)
+		}
 		if err := selfUpdate(); err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)

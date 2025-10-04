@@ -61,16 +61,16 @@ func IsNewerVersion(current, latest string) bool {
 		return false
 	}
 
-	currentParts := strings.Split(strings.TrimPrefix(current, "v"), ".")
-	latestParts := strings.Split(strings.TrimPrefix(latest, "v"), ".")
+	currentParts := parseVersion(strings.TrimPrefix(current, "v"))
+	latestParts := parseVersion(strings.TrimPrefix(latest, "v"))
 
 	maxLen := max(len(latestParts), len(currentParts))
 
 	for len(currentParts) < maxLen {
-		currentParts = append(currentParts, "0")
+		currentParts = append(currentParts, 0)
 	}
 	for len(latestParts) < maxLen {
-		latestParts = append(latestParts, "0")
+		latestParts = append(latestParts, 0)
 	}
 
 	for i := range maxLen {
@@ -82,4 +82,16 @@ func IsNewerVersion(current, latest string) bool {
 	}
 
 	return false
+}
+
+func parseVersion(version string) []int {
+	parts := strings.Split(version, ".")
+	nums := make([]int, len(parts))
+	for i, p := range parts {
+		// Ignore errors, default to 0
+		num := 0
+		fmt.Sscanf(p, "%d", &num)
+		nums[i] = num
+	}
+	return nums
 }
