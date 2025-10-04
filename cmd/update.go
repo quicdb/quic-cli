@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/quicdb/quic-cli/releases"
@@ -16,6 +17,11 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update to the latest version",
 	Run: func(cmd *cobra.Command, args []string) {
+		if isHomebrewInstall() {
+			fmt.Println("Detected Homebrew installation.")
+			fmt.Println("Please use: brew upgrade quic")
+			os.Exit(1)
+		}
 		if err := selfUpdate(); err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
@@ -95,4 +101,14 @@ func selfUpdate() error {
 	fmt.Println("Done")
 
 	return nil
+}
+
+func isHomebrewInstall() bool {
+	executable, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	return strings.Contains(executable, "/Cellar/quic/") ||
+	       strings.Contains(executable, "/Homebrew/") ||
+	       strings.Contains(executable, "homebrew")
 }

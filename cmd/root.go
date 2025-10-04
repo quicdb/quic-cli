@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/quicdb/quic-cli/releases"
 	"github.com/spf13/cobra"
@@ -43,6 +44,20 @@ func checkForUpdateNotification() {
 
 	if releases.IsNewerVersion(releases.Version, latest) {
 		fmt.Printf("> Newer version available: v%s -> v%s\n", releases.Version, latest)
-		fmt.Println("> $ quic update")
+		if isHomebrewInstall() {
+			fmt.Println("> $ brew upgrade quic")
+		} else {
+			fmt.Println("> $ quic update")
+		}
 	}
+}
+
+func isHomebrewInstall() bool {
+	executable, err := os.Executable()
+	if err != nil {
+		return false
+	}
+	return strings.Contains(executable, "/Cellar/quic/") ||
+	       strings.Contains(executable, "/Homebrew/") ||
+	       strings.Contains(executable, "homebrew")
 }
