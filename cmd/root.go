@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/quicdb/quic-cli/releases"
@@ -43,7 +44,7 @@ func checkForUpdateNotification() {
 	}
 
 	if releases.IsNewerVersion(releases.Version, latest) {
-		fmt.Printf("> Newer version available: v%s -> v%s\n", releases.Version, latest)
+		fmt.Printf("> Newer version available: %s -> %s\n", releases.Version, latest)
 		if isHomebrewInstall() {
 			fmt.Println("> $ brew upgrade quic")
 		} else {
@@ -57,7 +58,17 @@ func isHomebrewInstall() bool {
 	if err != nil {
 		return false
 	}
-	return strings.Contains(executable, "/Cellar/quic/") ||
-	       strings.Contains(executable, "/Homebrew/") ||
-	       strings.Contains(executable, "homebrew")
+
+	// Resolve symlinks to get the actual path
+	resolved, err := filepath.EvalSymlinks(executable)
+	if err != nil {
+		resolved = executable
+	}
+
+	return strings.Contains(resolved, "/Cellar/quic/") ||
+		strings.Contains(resolved, "/Homebrew/") ||
+		strings.Contains(resolved, "homebrew") ||
+		strings.Contains(executable, "/Cellar/quic/") ||
+		strings.Contains(executable, "/Homebrew/") ||
+		strings.Contains(executable, "homebrew")
 }
