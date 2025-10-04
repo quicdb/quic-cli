@@ -67,7 +67,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
 
           # Clone homebrew tap
-          git clone https://x-access-token:${TAP_TOKEN}@github.com/quicdb/quic-cli-homebrew-tap.git tap
+          git clone https://x-access-token:${TAP_TOKEN}@github.com/quicdb/homebrew-tap.git tap
           cd tap
 
           # Update formula
